@@ -1,0 +1,232 @@
+---
+title: "Homework 2"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=T,eval=T,message=F,warning=F,fig.align='center')
+```
+
+
+
+## Problem 1: The infamous mule kick data <small>20pts</small>
+
+The file `mule_kicks.csv`, available for download (here)[https://kdlevin-uwstat.github.io/STAT340-Fall2021/hw/03/mule_kicks.csv], contains a simplified version of a very famous data set. The data consists of the number of soldiers killed by being kicked by mules or horses each year in a number of different companies in the Prussian army near the end of the 19th century.
+
+This may seem at first to be a very silly thing to collect data about, but it is a very interesting thing to look at if you are interested in rare events. Deaths by horse kick were rare events that occurred independently of one another, and thus it is precisely the kind of process that we might expect to obey a Poisson distribution.
+
+Download the data and read it into R by running
+
+```{r}
+download.file('https://kdlevin-uwstat.github.io/STAT340-Fall2021/hw/03/mule_kicks.csv', destfile='mule_kicks.csv')
+mule_kicks = read.csv('mule_kicks.csv', header=TRUE)
+
+head(mule_kicks)
+```
+
+`mule_kicks` contains a single column, called `deaths`.
+Each entry is the number of soldiers killed in one corps of the Prussian army in one year.
+There are 14 corps in the data set, studied over 20 years, for a total of 280 death counts.
+
+
+### Part a: estimating the Poisson rate <small>5pts</small>
+
+Assuming that the mule kicks data follows a Poisson distribution, produce a point estimate for the rate parameter $\lambda$.
+There are no strictly right or wrong answers, here, though there are certainly better or worse ones.
+
+```{r}
+lambdahat <- mean(mule_kicks$deaths)
+```
+
+
+### Part b: constructing a CI <small>10pts</small>
+
+Using everything you know (Monte Carlo, CLT, etc.), construct a confidence interval for the rate parameter $\lambda$.
+Explain in reasonable detail what you are doing and why you are constructing the confidence interval in this way (a few sentences is fine!).
+
+```{r}
+n = 280
+Nrep <- 2000; # Number of repetitions (i.e., replicates)
+replicates <- rep(NA,Nrep); # We will store replicates of lambdahat here.
+for ( i in 1:Nrep) {
+  fake_data <- rpois(n=n, lambda=lambdahat);
+  replicates[i] <- mean( fake_data );
+}
+
+# Now construct the confidence interval
+CI <- quantile( replicates, probs=c(0.025, 0.975) );
+cat(CI)
+
+```
+
+***
+
+In part a, we estimated our distribution’s parameter from the data (lambdahat). Then, we can generate data from the distribution with a parameter equal to our estimate with rpois(n=n, lambda=lambdahat). What we have done is created a new, or "fake" distribution of data with the estimated parameter and we can calculate another "replicate" of the rate parameter. Using the Monte Carlo method, we repeat the previous step many times, computing a new estimate on each new data sample. Each repetition gives us a replicate of our statistic, under the distribution where lambda is equal to our original estimate. With this method, we can use that to construct a confidence interval for λ, by looking at the quantiles of our simulated sample.
+
+***
+
+
+### Part c: assessing a model <small>5pts</small>
+
+Here's a slightly more open-ended question.
+We *assumed* that the data followed a Poisson distribution.
+This may or may not be a reasonable assumption.
+Use any and all tools that you know to assess (either with code or simply in words) how reasonable or unreasonable this assumption is.
+
+Once again, there are no strictly right or wrong answers here.
+Explain and defend your decisions and thought processes in a reasonable way and you will receive full credit.
+
+***
+First, we can take a look at a histogram to get a glance of what the actual distribution of our data looks like. We should expect it to look like a Poisson distribution.
+
+```{r}
+hist(mule_kicks$deaths, xlab = "Deaths per year", main = "Histogram of Deaths per year")
+```
+
+As expected, our distribution does somewhat look like a Poisson distribution.
+
+In a Poisson distribution, its expected value and variance are also both theoretically equal to lambda. We can attempt to check this property as well.
+
+```{r}
+lambdahat
+distVar = var(mule_kicks$deaths)
+distVar
+```
+
+The observed variance and expected value of the distribution are approximately equal, and thus assuming the data as a Poisson distribution is fairly reasonable.
+***
+
+
+
+## Problem 2: Closing the loop <small>10 pts</small>
+
+In our discussion of the Universal Widgets of Madison company from lecture, we said that we were interested in two questions:
+
+1. Estimating the probability $p$ that a widget is functional.
+2. How many widgets should be in a batch to ensure that (with high probability) a batch ships with at least $5$ functional widgets in it?
+
+We discussed question (1) at length in lecture.
+What about question (2)?
+Our client wants to know how many widgets should ship in each batch so as to ensure that the probability there are at least $5$ functional widgets in a batch is at least $0.99$.
+
+Now, suppose that we have observed data and estimated $p$ to be $0.82$.
+
+Use everything you know so far in this course to give a recommendation to the client.
+Be sure to explain clearly what you are doing and why.
+If there are any steps, assumptions, etc., that you are not 100% pleased with, feel free to point them out.
+
+__Note:__ there are at least two "obvious" ways to solve this problem. One is based on using Monte Carlo (i.e., assume $p=0.82$ is the truth, and try generating batches of different sizes, etc.).
+The other uses direct computation of probabilities, using basic facts about Binomial RVs.
+Neither of these is necessarily better than the other, and you do not need to use both approaches to receive full credit.
+Indeed, you are free to try doing something else entirely, if you wish.
+Just explain clearly what you are doing and why!
+
+```{r}
+pbinom(q = 4, size = 10, prob = 0.82, lower.tail = FALSE)
+```
+
+***
+We can solve this problem using the properties of the binomial random variable. Speicifically, we can use the pbinom function. As mentioned in lecture, the following problem about widgets is demonstrated as a binomial random variable, where we have a probability of 0.82 of a widget being functional. Using the pbinom function, we can calculate the size of the batch to capture 0.99 percent of the distribution for X >= 5. We can accompish this by incrementing the size parameter in pbinom and with size = 10, we can reach a value of over 0.99. This indicates that with a size of 10 and probability of 0.82 for each individual widget being functional, there is over a 0.99 percent of at least 5 of the widges being functional.
+
+***
+
+
+
+## Problem 3: Permutation testing for correlatedness <small>20pts</small>
+
+We mentioned in lecture that independence and uncorrelatedness are usually things that we have to assume of our data, but that there are, in some settings, ways to detect the presence or absence of dependence.
+This problem will give an example of that, using our old friend the permutation test.
+
+Suppose that we observe pairs $(X_i, Y_i)$ where $X_i, Y_i \in \mathbb{R}$ for each $i=1,2,\dots,n$, with all $n$ pairs being independent of one another.
+That is, $(X_i,Y_i)$ is independent of $(X_j,Y_j)$ for $i \neq j$.
+
+Most typically, we think of these as predictor-response pairs.
+For example, the $X_i$ might represent years of education and $Y_i$ might represent income at age 30, and we want to predict $Y$ from a given value of $X$.
+These kinds of problems are probably familiar to you from your discussion of regression in STAT240, and that's a problem we'll return to in a couple of weeks.
+For now, though, let's forget about trying to estimate a regression coefficient or predict anything and instead just try to assess whether or not the $X$s and $Y$s are correlated at all.
+
+If $X_i$ and $Y_i$ are completely uncorrelated over all $i=1,2,\dots,n$, then, much like in permutation testing, it shouldn't matter what order the $Y$s appear with respect to the $X$s.
+That is, we should be able to shuffle the responses (i.e., the $Y_i$ terms) and not much should change in terms of how the data "looks".
+In particular, the correlation between the $X$s and $Y$s should not change much on average.
+
+
+### Part a: reading data, plotting and the eyeball test <small>10pts</small>
+
+The following code reads the horsepower (`hp`) and miles per gallon (`mpg`) columns from the famous `mtcars` data set (see `?mtcars` for background or a refresher).
+
+```{r}
+hp <- mtcars$hp
+mpg <- mtcars$mpg
+```
+
+Create a scatter plot of the data and state whether or not you think the variables `hp` and `mpg` are correlated, based on the plot (and explain what in the plot makes you think this).
+There is no need to do any statistics here-- just look at the data and describe what you see and what it suggests to you.
+
+```{r}
+
+plot(hp, mpg, main = "Miles per gallon (mpg) VS Horsepower (hp)")
+
+```
+
+***
+
+Based on the scatter plot, it seems that the two variables are negatively correlated. For higher values of horsepower, it seems that the values for miles per hours are decreasing.
+
+***
+
+
+### Part b: testing for correlation <small>10pts</small>
+
+Use a permutation test to assess whether or not the vectors `hp` and `mpg` are correlated.
+Pick a reasonable level $\alpha$ for your test and accept or reject the null hypothesis (letting $H$ be the RV representing horsepower and $M$ be the RV representing miles per gallon)
+
+$$
+H_0 : \operatorname{ Corr }( H, M ) = 0
+$$
+
+accordingly.
+Be sure to clearly explain your reasoning and give a basic explanation of the procedure you are following.
+Imagine that you are writing for a fellow STAT340 student, rather than for your professor or TA.
+
+__Hint:__ remember, the basic permutation recipe is to shuffle the data and then compute the test statistic on the shuffled data.
+In this case, the "right" test statistic is clearly... (you'll have to decide, but there are one or two pretty obvious choices), and shuffling the data just corresponds to permuting the entries of either `hp` or `mpg`.
+
+
+```{r}
+Tobsd = cor(hp, mpg)
+Tobsd
+
+# Shuffling function from class
+permute_and_compute <- function( hp_data, mpg_data ) {
+pooled_data <- c( hp_data, mpg_data );
+# Randomly shuffle the data and assign it to groups.
+n_hp <- length( hp_data );
+n_mpg <- length( mpg_data );
+n_total <- n_hp + n_mpg;
+
+shuffled_data <- sample( pooled_data, size=n_total, replace=FALSE );
+shuffled_hp <- shuffled_data[1:n_hp];
+shuffled_mpg <- shuffled_data[(n_hp+1):n_total];
+return( cor(shuffled_mpg, shuffled_hp) );
+}
+
+NMC <- 1e4;
+test_statistics <- rep( 0, NMC ); # Vector to store our "fake" test statistics
+# Now, NMC times, shuffle the data, recompute the test statistic, and record.
+for(i in 1:NMC ) {
+test_statistics[i] <- permute_and_compute( hp, mpg );
+}
+
+hist( test_statistics )
+abline( v=Tobsd, lw=3, col='red')
+
+pvalue = sum(test_statistics <= Tobsd | test_statistics >= abs(Tobsd))/NMC
+pvalue
+```
+
+
+***
+
+To observe whether our two random variables are correlated or not, we can perform a permutation test with a test statistic as the correlation of the variables using the cor() function. First, our observed test statistic is approximately -0.77. Our null hypothesis is H_0: Corr(H, M) = 0, so our alternative hypothesis is that the correlation between H and M is either greater than 0 or less than 0. Therefore we have a two-sided test. Already, we can see that the observed statistic is not at all close to zero and highly negative. To formally reject the null hypothesis with an alpha value of 0.05, we can modify the permute_and_compute function to shuffle the data of hp and mpg and calculate the correlation. Using the Monte Carlo method with 1e4 iterations and calculating a p-value, we get zero for the p value, which means we have seen in no case among the 1e4 iterations where we have observed a test statistic equal to or more extreme than our observed test statistic. In simpler terms, it is extremely rare for us to experience our observed test statistic given that the two variables are independent, and so we have strong evidence to reject the null hypothesis that the two random variables have no correlation.
+
+***

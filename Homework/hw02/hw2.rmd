@@ -1,0 +1,478 @@
+---
+title: "Homework 2"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=T,eval=T,message=F,warning=F,fig.align='center')
+```
+
+
+## Problem 1 <small>(10pts)</small>
+
+According to a recent U.N. report, the warmest eight years on record have all been since 2015. That is, the years 2015, 2016, 2017, 2018, 2019, 2020, 2021, and 2022 were the eight warmest years (though not necessarily in that order) since record-keeping began circa 1850. Let's simplify things a bit, and suppose that records exist just for the past 12 years, with the first recorded temperature in 2011 and with 2022 being the last year.
+
+Suppose the average temperatures for the past 12 years were random with no trend. Then we would expect that any of the 12 years on record is equally likely to be the hottest on record, any of the remaining 11 years on record is equally likely to be the second hottest on record, etc. Use Monte Carlo to estimate the probability that, under this model in which all temperature orderings are equally likely, the eight warmest years on record all occurred in the last eight years 2015-2022.
+
+*Hints*:
+
+ - A completely equivalent question asks, if we order the numbers 1 to 10 completely at random, what is the probability that the numbers $\{1, 2, 3, 4, 5, 6, 7 \}$ appear in the first seven entries in the ordering?
+Bear in mind that this *does not* require that 1 appear first in the ordering, 2 second, etc., only that the first seven numbers appear in the first seven "entries" of our ordering.
+ - If `n` is a positive integer, `sample( n, n, replace=FALSE )` will give a random ordering of the numbers `1` through `n`  - Suppose you have an R vector `v` of length `n`, consisting of each the integers 1 through `n`, in some order. What is a good way to check that the numbers 1,2,3,4,5,6,7 all appear in the first seven elements of `v`? One (rather naive) approach would be to just check, for each $i \in \{ 1,2,3,4,5,6,7 \}$, that one of the first seven elements of `v` is equal to $i$, but this would be rather slow. Convince yourself that an equivalent approach is to check if the first seven elements of `v` sum to `sum(1:7)`.
+
+Use at least 10,000 Monte Carlo iterates to produce your estimate. If you take the hints above into account correctly, you should be able to run this many Monte Carlo iterates with little or no trouble. Otherwise, your experiment may require a few minutes to run. If things are taking an especially long time, feel free to reduce that 10,000 figure down to 1000.
+
+```{r}
+years = c(2011:2022)
+
+NMC = 1e5
+definitelyWarmer = 0
+
+for (i in 1:NMC){
+  randomYears = sample(years, 12, replace = FALSE)
+  if (sum(randomYears[5:12]) == sum(years[5:12])) {
+    definitelyWarmer = definitelyWarmer + 1
+  }
+}
+
+definitelyWarmer
+```
+
+> The probalibilty for the compiled code is:
+
+```{r}
+prob = definitelyWarmer/NMC
+prob
+```
+
+> With 100,000 Monte Carlo iterations, we are getting approximately 0.2% probabilities each time we compile and run the code! Therefore it is unlikely for this to be coincidence and there is a relatively higher chance of something unnatural happening during recent years!
+
+## Problem 2 <small>(10pts)</small>
+
+Let the following vector represent a deck of cards (for simplicity, we're ignoring suits (symbols) for now and only focusing on the ranks (numbers)).
+
+```{r}
+deck = rep(1:13,each=4)
+deck
+```
+
+Suppose you draw 5 cards. Using MC, estimate the probability of the following outcomes. Try to run as many iterations as you can comfortably run so you can get a better estimate of each. If you have run as many iterations as you can and you still do not observe a single occurrence of an event, you may state the probability as less than 1/M, where M is the number of iterations you used.
+
+1. A hand with all 5 cards having different ranks
+```{r}
+M = 1e5
+
+diffCount = 0
+
+for (i in 1:M) {
+  cards = sample(deck, 5, replace = FALSE)
+  if (length(unique(cards)) == 5) {
+    diffCount = diffCount + 1
+  }
+}
+
+diffCount
+```
+
+> Probability for a hand with all 5 cards having different ranks:
+
+```{r}
+prob = diffCount / M
+prob
+```
+
+2. A hand with no cards that are 10 or higher
+```{r}
+noHigh = 0
+
+hasHigh = function(vec) {
+  for (j in 1:length(vec)) {
+    if (vec[j] >= 10) {
+      return(TRUE)
+    }
+  }
+  return(FALSE)
+}
+
+for (i in 1:M) {
+  cards = sample(deck, 5, replace = FALSE)
+  if (hasHigh(cards) == FALSE) {
+    noHigh = noHigh + 1
+  }
+}
+
+noHigh
+```
+
+> Probability for a hand with no cards that are 10 or higher:
+
+```{r}
+prob = noHigh / M
+prob
+```
+
+3. A hand with two pairs (e.g. 3,3,7,7,9)
+```{r}
+twoPair = 0
+
+hasTwoP = function(vec) {
+  vecTable = table(vec)
+  
+  if (sum(vecTable == 2) == 2) {
+    return(TRUE)
+  } else {
+    return(FALSE)
+  }
+}
+
+for (i in 1:M) {
+  cards = sample(deck, 5, replace = FALSE)
+  if (hasTwoP(cards)) {
+    twoPair = twoPair + 1
+  }
+}
+
+twoPair
+```
+
+> Probability for a hand with two pairs:
+
+```{r}
+prob = twoPair / M
+prob
+```
+
+4. A hand with a pair and a triple (e.g. 5,5,5,2,2)
+```{r}
+pairTrip = 0
+
+hasPairTrip = function(vec) {
+  vecTable = table(vec)
+  
+  if ((sum(vecTable == 2) == 1) & (sum(vecTable == 3) == 1))  {
+    return(TRUE)
+  } else {
+    return(FALSE)
+  }
+}
+
+for (i in 1:M) {
+  cards = sample(deck, 5, replace = FALSE)
+  if (hasPairTrip(cards)) {
+    pairTrip = pairTrip + 1
+  }
+}
+pairTrip
+```
+
+> Probability for a hand with a pair and a triple (e.g. 5,5,5,2,2):
+
+```{r}
+prob = pairTrip / M
+prob
+```
+
+5. A hand with a four of a kind (e.g. 8,8,8,8,10)
+```{r}
+fourKind = 0
+
+hasfourKind = function(vec) {
+  vecTable = table(vec)
+  
+  if (sum(vecTable == 4) == 1)  {
+    return(TRUE)
+  } else {
+    return(FALSE)
+  }
+}
+
+for (i in 1:M) {
+  cards = sample(deck, 5, replace = FALSE)
+  if (hasfourKind(cards)) {
+    fourKind = fourKind + 1
+  }
+}
+fourKind
+```
+
+> Probability for a hand with a four of a kind (e.g. 8,8,8,8,10)
+
+```{r}
+prob = fourKind / M
+prob
+```
+
+
+## Problem 3: Permutation testing <small>(10pts)</small>
+
+Below are data arising from a (fictionalized) data source: the number of defects per day on an assembly line before and after installation of a new torque converter (this is a totally fictional "part" of an assembly line--just treat these as "control" and "treatment" groups, respectively).
+
+```{r}
+before = c(4,5,6,3,6,3,4,5,5,3,4,6,4,6,3,4,2,2,0,7,5,8,4,5,1,4,4,8,2,3)
+after  = c(3,2,4,3,7,5,5,2,2,4,5,2,2,6,1,5,6,3,2,3,7,3,4,5,4,2,2,6,7,8)
+```
+
+a) Use a permutation test to assess the claim that installation of the new part changed the prevalence of defects. That is, test the null hypothesis that the distribution of defects is the same before and after installation of the new part. Produce a p-value and interpret the results of your test in context.
+
+> First, let's state a simple null hypothesis and an alternative hypothesis regarding the change in defects after and before the installation of the new part.
+
+### Hypotheses
+
+$$
+H_0: F_{\text{before}} = F_{\text{after}} \\
+H_a: F_{\text{before}} \neq F_{\text{after}}
+$$
+
+> Now, we will use the permute_and_compute function from class and perform a Monte Carlo (100000 iterations) simulation to observe how the test-statistic(mean) performs under the null hypothesis.
+
+```{r}
+# Code from class
+permute_and_compute = function( before, after ) {
+  # Pool the data
+  pooled_data <- c( before, after );
+  # Randomly shuffle the data and assign it to control and treatment groups.
+  n_before <- length( before );
+  n_after <- length( after );
+  n_total <- n_before + n_after;
+
+  shuffled_data <- sample( pooled_data, size=n_total, replace=FALSE );
+  
+  # Now, the first n_before of these data points are our new control group
+  # and the remaining elements are assigned to our treatment group.
+  shuffled_before <- shuffled_data[1:n_before];
+  shuffled_after <- shuffled_data[(n_before+1):n_total];
+  # Okay, last step: compute the difference in means of our two samples.
+  return( mean(shuffled_after)-mean(shuffled_before) );
+}
+
+# Monte Carlo
+NMC <- 1e5;
+test_statistics <- rep( 0, NMC ); # Vector to store our "fake" test statistics
+# Now, NMC times, shuffle the data, recompute the test statistic, and record.
+for(i in 1:NMC ) {
+  test_statistics[i] <- permute_and_compute( before, after );
+}
+# Now, let's make a histogram of those permuted test statistics.
+hist( test_statistics )
+```
+
+> Okay, now let's calculate the test-statistic for our two distributions and plot it on the graph.
+
+```{r}
+hist( test_statistics )
+abline( v=mean(after)-mean(before), lw=3, col='red' )
+```
+
+> Right away, it seems that it is highly likely for our observed test-statistic to occur under the null hypothesis. To be more accurate, let's calculate the p-value. We should be taking into account both tails (two-sided) since both negative and positive means equally indicates changes (either making better or worse changes in terms of defect production) to the distributions.
+
+```{r}
+Tobsd <- mean(after) - mean(before); # Actually observed test statistic.
+# Monte Carlo estimate: how often in our simulation did the "fake" data
+# have a difference in means greater than or equal to Tobsd?
+pvalue = sum(test_statistics <= Tobsd | test_statistics >= (-Tobsd))/NMC;
+pvalue
+```
+
+> In conclusion, there is little evidence ($p_{\text{value}}$ = `r signif(pvalue,2)`, two-sided permutation test) to reject the null hypothesis and that the new part introduces change to the prevalence of defects. It is in fact quite likely to see our observed statistic assuming that the null hypothesis (both distributions are equal) is true.
+
+b) Explain, briefly, what you did above and why. Imagine that you are trying to explain to someone who isn't well versed in statistics what exactly you are doing in a permutation test. Explain your conclusion based on your test above. Three to five sentences should be plenty, but you are free to write as much or as little as you think is necessary to clearly explain your findings.
+
+> First, I chose my test-statistic as the difference in means of the two distributions. It made sense to me to choose the difference in means because in order to conceptually visualize a new part making a difference in product, it will either produce less or more defects each day. By doing this, the new part will allow either raise or lower the average (mean) number of defects each day. When we actaully calculate the difference in means of both distributions, we saw that the new part caused the torque converter to generate approximately `r abs(signif(Tobsd,2))` less defects on average every day. At first glance, one could say that this does not seem much of a change even though it could still have a positive effect. By calculating the p value, that person would be right. The p value is the probability of encountering our observed mean assuming that the null hypothesis is true. In our case, the null hypothesis was that both distributions -- after and before the new part -- are equal. After randomly shuffling the data and dividing them into two groups (the 'before' group and the 'after' group) 100,000 times, and calculating the difference in means for all 100,000 cases, we found that it is nearly `r signif(pvalue,2) * 100`% probable to see our actual observed mean. This gives us no evidence to reject the null hypothesis.
+
+
+## Problem 4: Memes <small>(10pts)</small>
+
+The following question comes from Karl Rohe, who developed the very first version of this class. This question has been reproduced in nearly the exact original (very amusing) wording.
+
+> **Memes, part 1** (Please forgive me. I drank too much coffee before writing this question.)
+> 
+> In class thus far, there have been 416 comments posted in the bbcollaborate chat during class. An expert panel has judged 47 of these comments to be memes. The big-bad-deans say that they are concerned "if there is evidence that more than 10% of comments are memes." So, this looks like bad news, 47/416>10%.
+> 
+> Karl pleads with the deans: "Please, oh please, you big-bad-deans... Memeing is totally random." (I don't actually know what this notion of "random" means, but please just run with it for this question.) Then, along comes you, a trusty and dedicated 340 student. You say that "because we have only observed 416 comments, we don't really know what the 'true proportion' of memes."
+> 
+> 4a: What would be a good distribution for the number of memes?
+> A good distribution for the number of memes can be modelled using the binomial distribution. We have a fixed number of trials (416 comments) and a "true proportion" to test by setting binary values for a comment being a meme and not being a meme.
+> 4b: Using your distribution from 4a, test the null hypothesis that the 'true proportion' is actually 10%. It's all up to you now... report the p-value.
+
+### Hypotheses
+
+$$
+H_0: p_{\text{proportion}} = 0.10 \\
+H_a: p_{\text{proportion}} > 0.10
+$$
+
+> We can conduct a one-sided binomial test and see the probability of observing 47 or more 'meme' comments when the 'true proportion' is 0.1 via the following code:
+
+```{r}
+pval = 1 - pbinom(46, 416, 0.1)
+pval
+```
+
+> In conclusion, there is no evidence ($p_{\text{value}}$ = `r signif(pval,2)`, one-sided binomial test) to reject the null hypothesis. So the big-bad-deans do not have enough evidence to say the hypothesis that the 'true proportion' is actually 10% is false!
+
+Hints:
+
+- For 4a, there should be a (hopefully) fairly intuitive choice of random variable that makes sense here. Look at your list of random variables and ask yourself which of these makes the most sense.
+- For 4b, you can use the built-in function in R to simulate observations according to your null. Remember that you **always simulate *assuming* the null hypothesis**. Make sure your choice of the necessary parameter(s) reflects this assumption.
+
+
+
+## Problem 5: Testing coin flips <small>(10 pts)</small>
+
+In the six sequences below, only one of them is actually **randomly generated from independent flips of a fair coin**. Use a combination of everything you know (common sense, Monte Carlo, hypothesis testing, etc.) to identify which is actually random and explain your reasoning.
+
+(For full points, conduct a formal test and report a p-value for each sequence. You may use a combination of multiple tests to arrive at your answer. If you cannot compute a p-value for each sequence, you can still earn a significant amount of partial credit by carefully explaining your reasoning and response as best as you can.)
+
+My advice is **be creative** with the test statistics you come up with to eliminate each sequence! Think of some way of summarizing a sequence of flips that might be useful for comparing against a simulated sequence of random flips. After you come up with an idea for a statistic, remember to run it on many MC generated completely random flips to produce a distribution under the null, which you can then compare with your data to get a p-value. Also, be careful of now you define "more extreme" than the data.
+
+(2 bonus points available if you can find a single test that is powerful enough to reject all the fake sequences together in one step. Yes, at least one such possible test exists.)
+
+```{r}
+flips1 = "HTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHTHT"
+
+flips2 = "HHHTHTTTHHTHHTHHHTTTTHTHTHHTTHTHHHTHHTHTTTHTHHHTHTTTHTHTHHTHTHTTHTHHTHTHTTTHTHHHTHTHTTHTHTHHTHTHTHHHTHTTTHTHHTHTHTHHTTTHTHHTHHTTTTHTHTHHHTHTTHTHHTHTHTTHTHHTHTHHHTHHHTHTTTHTTHTTTHTHHHTHTHTTHTHHTHHTHTTT"
+
+flips3 = "HHTHTHTTTHTHHHTHHTTTHTHHTHTTTHTHTHHTHTHTTHTHHHHHHTTTHTHTHHTHTTTHTHHTHTHTTTHTHHHTTHTTTHTHTHHHHTHTTHHTTTTTHTHHHTHTHTTTTTHHHTHHTHHTHHHTTTTHTHTHHHTHHTTTTTHTHHHTHTHTHTTTHTHHHTHTHTHTTHTHHTHTHTHTTTTHTHHHTHTH"
+
+flips4 = "HTHHHHHHHTHTTHHTTHHHTHTHTTTHHTHHHTHHTTHTTTTTTTTTHTHHTTTTTHTHTHTHHTTHTTHTTTTTHHHTHTTTHTHTHHHTHTTTTHTHTHHTTHTHTTHHTHTHHHHTHTTHHTTHTTHTTHTHHHHHHTTTTTTHHHTTHTHHHHTTTHTTHHHTTHTHHTTTHHTHHTTTHTHHTHHHTHHTTHHH"
+
+flips5 = "HHHHHHHHHHTTTTTTTTTTHHHHHHHHHHTTTTTTTTTTHHHHHHHHHHTTTTTTTTTTHHHHHHHHHHTTTTTTTTTTHHHHHHHHHHTTTTTTTTTTHHHHHHHHHHTTTTTTTTTTHHHHHHHHHHTTTTTTTTTTHHHHHHHHHHTTTTTTTTTTHHHHHHHHHHTTTTTTTTTTHHHHHHHHHHTTTTTTTTTT"
+
+flips6 = "TTHTTTHTTTTTTTHTHTHTHTTHTTHTHHTHHTTTHHTHTTTHTHHTHHHTHTTHHTHHTTHTHTTTTHTHTTTHHTTTTTTTTHTHHTTHTTTTTTHTHTHTHTTTHTTHHTTHTTTHHTTTHTTHTTTTHTTTTHHTTTHTHTHHHTTTTTTHTHHTTTTTTTTTTTTHHHTTTHHHTTTHTTTHTHTTHTTTTTHT"
+
+# you can use the function below to split the above sequences in vectors of flips
+split = function(str) strsplit(str, split="")[[1]]
+split(flips1)
+```
+
+> I will attempt to answer the question by coming up with a single test that is powerful enough to reject all the fake sequences together in one step.
+
+> First, I will it seems thats some of the flips such as flips4 and flips6 have unusual streaks, immediately bringing suspicion that they are flips with an unfair coin. However, we cannot simply use this 'intuition' to guide us through all flips. So, similar to the Hot Hands example, let us consider all the pairs of possible flips and examine their counts.
+
+> Before we move on, I will state the null and alternative hypotheses.
+
+### Hypotheses
+
+H_0: The flip is generated with a fair coin.
+
+H_a: The flip is generated with an unfair coin.
+
+
+> There are four pairs that we should consider, which are HH, HT, TT, and TH. Assuming we have a fair coin, we should expect equal proportions for each of these pairs. All flip sequences above have a total of 200 flips, and so it is reasonable to assume, in theory, that all four pairs should have appeared 200-1/4 =49.75 times or approximately 50. But we know that even a fair coin will not show all four pairs exactly this many times, but rather approximately around this value. So how do we decide whether or not a occurance of these four pairs are likely to occur? We can use the chi-squared statistic decribed in https://www.khanacademy.org/math/ap-statistics/chi-square-tests/chi-square-goodness-fit/v/chi-square-statistic.
+
+> Let's load the tableOfPairs function. We will generate p-values according to the chi-squared statistic for each of the flips in the code below.
+
+```{r}
+# install the runner package if necessary
+if(!"runner" %in% rownames(installed.packages())) install.packages("runner")
+# define function for tabulating consecutive pairs
+tableOfPairs = function(vec){
+  return(table(runner::runner(vec,k=2,f=paste,collapse="")[-1]))
+}
+```
+
+> As mentioned above, we are expected to see all four pairs 199/4 times. We will create a vector for that to compare with the observed values.
+
+```{r}
+# get observed values for flips
+obs1 = tableOfPairs(split(flips1))
+obs2 = tableOfPairs(split(flips2))
+obs3 = tableOfPairs(split(flips3))
+obs4 = tableOfPairs(split(flips4))
+obs5 = tableOfPairs(split(flips5))
+obs6 = tableOfPairs(split(flips6))
+
+# modify obs1 to include HH and TT columns
+obs1 = obs2
+obs1[1] = 0
+obs1[2] = 100
+obs1[3] = 99
+obs1[4] = 0
+
+# vector for expected values
+expected = rep(199 * 0.25, 4)
+
+pval1 = 1 - pchisq(sum((obs1 - expected)^2 / expected), df = 3)
+pval2 = 1 - pchisq(sum((obs2 - expected)^2 / expected), df = 3)
+pval3 = 1 - pchisq(sum((obs3 - expected)^2 / expected), df = 3)
+pval4 = 1 - pchisq(sum((obs4 - expected)^2 / expected), df = 3)
+pval5 = 1 - pchisq(sum((obs5 - expected)^2 / expected), df = 3)
+pval6 = 1 - pchisq(sum((obs6 - expected)^2 / expected), df = 3)
+
+pval1
+pval2
+pval3
+pval4
+pval5
+pval6
+```
+
+> In conclusion, we can reject the null hypothesis that the flip is unfair for flips 1, 2, 3, 5, and 6. Only flips4 remains where we do not have evidence to reject the null hypothesis, with a $p_{\text{value}}$ = `r signif(pval4,2)` from a chi-squared test!
+
+> To ensure that I receive all points, I will conduct other several other tests as well. We will use the same hypotheses stated above.
+
+> First, there are some obvious unfair flips such as flip5 that includes too many streaks. We will try to eliminate these first. Let's use the longestRun function used in class to observe the longest run of heads for each flip. We will use Monte Carlo to see how the distribution of longest head streaks actually looks like, and determine how the observed runs compare to them. Since flips1 contains an ideal equal number of heads and tails, we can use this as the sample space/pool.
+
+```{r}
+longestRun = function(x,target = 'H'){
+    max(0,with(rle(x), lengths[values==target]))
+}
+
+# generate vectors
+vec1 = split(flips1)
+vec2 = split(flips2)
+vec3 = split(flips3)
+vec4 = split(flips4)
+vec5 = split(flips5)
+vec6 = split(flips6)
+
+headStreak1 = longestRun(vec1)
+headStreak2 = longestRun(vec2)
+headStreak3 = longestRun(vec3)
+headStreak4 = longestRun(vec4)
+headStreak5 = longestRun(vec5)
+headStreak6 = longestRun(vec6)
+
+# set number of reps to use
+N = 10000
+# create vector to save results in
+mc.runs = rep(NA,N)
+# for each rep, randomize sequence and find longest run of H
+for(i in 1:N){
+    mc.runs[i] = longestRun(sample(vec1))
+}
+
+hist(mc.runs, 20)
+```
+
+> So far, the observed head streaks for flips 1 through 6 respectively are 1, 3, 6, 7, 10, and 3. Let's look at the proportion of longest head runs of streaks less than 4.
+
+```{r}
+headCount = 0
+for(i in 1:N){
+  if (mc.runs[i] < 4) {
+    headCount = headCount + 1
+  }
+}
+
+headCount
+prob = headCount / N
+prob
+```
+
+> This gives us a proportion of 0.0001. Using this statistic, we can immediately reject the null hypothesis for flips 1, 2, and 6. This is because it is highly unlikely that such streaks can happen. Conversely, let's try the same for streaks for more than 7 and attempt to eliminate flips 4 or 5.
+
+```{r}
+headCount = 0
+for(i in 1:N){
+  if (mc.runs[i] >= 10) {
+    headCount = headCount + 1
+  }
+}
+
+headCount
+prob = headCount / N
+prob
+```
+
+> Unfortunately, checking for more runs than 7 gives us a p-value of more than 0.5, which is indeed not enough at all. Surprisingly, we are not even able to eliminate the streak of 10 as well.
